@@ -3,6 +3,7 @@ from rest_framework import status
 from dj_rest_auth.registration.views import RegisterView
 from chat.models import Setting
 from allauth.account import app_settings as allauth_account_settings
+import re
 
 
 class RegistrationView(RegisterView):
@@ -17,6 +18,11 @@ class RegistrationView(RegisterView):
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+
+        email = serializer.validated_data.get('email', '')
+        if not self.is_valid_email_domain(email):
+            return Response({'detail': 'Your email domain is not allowed.'}, status=status.HTTP_403_FORBIDDEN)
+
         user = self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
         data = self.get_response_data(user)
@@ -33,3 +39,6 @@ class RegistrationView(RegisterView):
             response = Response(status=status.HTTP_204_NO_CONTENT, headers=headers)
 
         return response
+
+    def is_valid_email_domain(self, email, domain_pattern=r'@nbis\.se$'):
+        return re.search(domain_pattern, email)
