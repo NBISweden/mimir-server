@@ -4,7 +4,8 @@ from dj_rest_auth.registration.views import RegisterView
 from chat.models import Setting
 from allauth.account import app_settings as allauth_account_settings
 import re
-
+from smtplib import SMTPRecipientsRefused
+from django.contrib.auth import get_user_model
 
 class RegistrationView(RegisterView):
     def create(self, request, *args, **kwargs):
@@ -22,8 +23,17 @@ class RegistrationView(RegisterView):
         email = serializer.validated_data.get('email', '')
         if not self.is_valid_email_domain(email):
             return Response({'detail': 'Your email domain is not allowed.'}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            user = self.perform_create(serializer)
+        except SMTPRecipientsRefused:
+            user_model = get_user_model()
+            try:
+                user_to_delete = user_model.objects.get(email=email)
+                user_to_delete.delete()
+                return Response({'detail': 'Email could not be sent'}, status=status.HTTP_400_BAD_REQUEST)
+            except user_model.DoesNotExist:
+                return Response({'detail': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        user = self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
         data = self.get_response_data(user)
 
