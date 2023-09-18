@@ -26,13 +26,7 @@ class RegistrationView(RegisterView):
         try:
             user = self.perform_create(serializer)
         except SMTPRecipientsRefused:
-            user_model = get_user_model()
-            try:
-                user_to_delete = user_model.objects.get(email=email)
-                user_to_delete.delete()
-                return Response({'detail': 'Email could not be sent'}, status=status.HTTP_400_BAD_REQUEST)
-            except user_model.DoesNotExist:
-                return Response({'detail': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return self.remove_unverified_user(email)
 
         headers = self.get_success_headers(serializer.data)
         data = self.get_response_data(user)
@@ -50,5 +44,16 @@ class RegistrationView(RegisterView):
 
         return response
 
-    def is_valid_email_domain(self, email, domain_pattern=r'@nbis\.se$'):
+    @staticmethod
+    def is_valid_email_domain(email, domain_pattern=r'@nbis\.se$'):
         return re.search(domain_pattern, email)
+
+    @staticmethod
+    def remove_unverified_user(email):
+        user_model = get_user_model()
+        try:
+            user_to_delete = user_model.objects.get(email=email)
+            user_to_delete.delete()
+            return Response({'detail': 'Email could not be sent'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except user_model.DoesNotExist:
+                return Response({'detail': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
