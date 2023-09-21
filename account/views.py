@@ -40,5 +40,6 @@ class RegistrationView(RegisterView):
 
         return response
 
-    def is_valid_email_domain(self, email, domain_pattern=r'@nbis\.se$'):
+    @staticmethod
+    def is_valid_email_domain(email, domain_pattern=r'@kknbis\.se$'):
         return re.search(domain_pattern, email)
