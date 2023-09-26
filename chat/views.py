@@ -165,7 +165,7 @@ class EmbeddingDocumentViewSet(viewsets.ModelViewSet):
             dump_basename = 'fh' + str(uuid.uuid4()).replace('-', '')
             dump_name = os.path.join(tmpdirname, dump_basename)
             with open(dump_name, mode) as f:
-                f.write(file_bytes)
+                f.write(file_bytes if mode == 'wb' else file_bytes.decode('utf-8'))
 
             faiss_store = get_embedding_document(dump_name, file_mime)
 
